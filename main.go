@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/planetquack1/blog-aggregator.git/internal/database"
+	"github.com/planetquack1/blog-aggregator/internal/database"
 
 	_ "github.com/lib/pq"
 )
@@ -20,17 +20,23 @@ func main() {
 
 	// Load environment variables
 	godotenv.Load()
-	port := os.Getenv("PORT")
-
-	// Open a connection and add it to config
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal()
+	portString := os.Getenv("PORT")
+	if portString == "" {
+		log.Fatal("PORT is not found in the environment")
+	}
+	dbURLString := os.Getenv("DB_URL")
+	if dbURLString == "" {
+		log.Fatal("DB_URL is not found in the environment")
 	}
 
-	dbQueries := database.New(db)
+	// Open a connection and add it to config
+	conn, err := sql.Open("postgres", dbURLString)
+	if err != nil {
+		log.Fatal("Can't connect to database")
+	}
+
 	cfg := apiConfig{
-		DB: dbQueries,
+		DB: database.New(conn),
 	}
 
 	// Initialize ServeMux
@@ -38,10 +44,12 @@ func main() {
 
 	mux.HandleFunc("GET /v1/healthz", handlerReadiness)
 	mux.HandleFunc("GET /v1/err", handlerError)
+
+	mux.HandleFunc("GET /v1/users", cfg.getUsers)
 	mux.HandleFunc("POST /v1/users", cfg.postUsers)
 
 	srv := http.Server{
-		Addr:    ":" + port,
+		Addr:    ":" + portString,
 		Handler: mux,
 	}
 
