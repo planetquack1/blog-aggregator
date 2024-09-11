@@ -45,8 +45,13 @@ func main() {
 	mux.HandleFunc("GET /v1/healthz", handlerReadiness)
 	mux.HandleFunc("GET /v1/err", handlerError)
 
-	mux.HandleFunc("GET /v1/users", cfg.getUsers)
+	mux.HandleFunc("GET /v1/users", cfg.middlewareAuth(cfg.getUsers))
 	mux.HandleFunc("POST /v1/users", cfg.postUsers)
+
+	mux.HandleFunc("GET /v1/feeds", cfg.getFeeds)
+	mux.HandleFunc("POST /v1/feeds", cfg.middlewareAuth(cfg.postFeeds))
+
+	mux.HandleFunc("POST /v1/feed_follows", cfg.middlewareAuth(cfg.postFeedFollows))
 
 	srv := http.Server{
 		Addr:    ":" + portString,

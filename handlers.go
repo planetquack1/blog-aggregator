@@ -74,19 +74,131 @@ func (cfg *apiConfig) postUsers(w http.ResponseWriter, r *http.Request) {
 	w.Write(dat)
 }
 
-func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) getUsers(w http.ResponseWriter, r *http.Request, user database.User) {
 
-	// Extract API key from the Authorization header
-	apiKey := getAuthFromHeader(r, "ApiKey")
-
-	user, err := cfg.DB.GetUser(r.Context(), apiKey)
+	// Marshall and write
+	dat, err := json.Marshal(user)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to get user")
+		log.Printf("Error marshalling user: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(dat)
+}
+
+func (cfg *apiConfig) postFeeds(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	type Feed struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	}
+
+	// Read in struct
+	feed, err := decodeJSON(r, Feed{})
+	if err != nil {
+		respondWithError(w, 400, "Failed to parse JSON")
+		return
+	}
+
+	currentTime := time.Now()
+
+	randomUUID, err := uuid.NewRandom()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
+		return
+	}
+
+	addedFeed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+		ID:        randomUUID,
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+		Name:      feed.Name,
+		Url:       feed.URL,
+		UserID:    user.ID,
+	})
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 
 	// Marshall and write
-	dat, err := json.Marshal(user)
+	dat, err := json.Marshal(addedFeed)
+	if err != nil {
+		log.Printf("Error marshalling user: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(dat)
+}
+
+func (cfg *apiConfig) getFeeds(w http.ResponseWriter, r *http.Request) {
+
+	allFeeds, err := cfg.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unauthorized")
+		return
+	}
+
+	// Marshall and write
+	dat, err := json.Marshal(allFeeds)
+	if err != nil {
+		log.Printf("Error marshalling user: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(dat)
+}
+
+func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	type FeedID struct {
+		ID string `json:"feed_id"`
+	}
+
+	// Read in struct
+	feed, err := decodeJSON(r, FeedID{})
+	if err != nil {
+		respondWithError(w, 400, "Failed to parse JSON")
+		return
+	}
+
+	// Parse feed ID
+	feedID, err := uuid.Parse(feed.ID)
+	if err != nil {
+		respondWithError(w, 400, "Failed to parse ID from string to UUID")
+		return
+	}
+
+	currentTime := time.Now()
+
+	randomUUID, err := uuid.NewRandom()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
+		return
+	}
+
+	addedFeed, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
+		ID:        randomUUID,
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+		UserID:    user.ID,
+		FeedID:    feedID,
+	})
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create user")
+		return
+	}
+
+	// Marshall and write
+	dat, err := json.Marshal(addedFeed)
 	if err != nil {
 		log.Printf("Error marshalling user: %s", err)
 		return
