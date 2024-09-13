@@ -237,3 +237,23 @@ func (cfg *apiConfig) deleteFeedFollows(w http.ResponseWriter, r *http.Request, 
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (cfg *apiConfig) getFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	allUserFeedFollows, err := cfg.DB.GetFeedFollow(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unauthorized")
+		return
+	}
+
+	// Marshall and write
+	dat, err := json.Marshal(allUserFeedFollows)
+	if err != nil {
+		log.Printf("Error marshalling user: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(dat)
+}
