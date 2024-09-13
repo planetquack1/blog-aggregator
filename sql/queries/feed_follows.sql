@@ -7,3 +7,7 @@ RETURNING *;
 -- SELECT * FROM users
 -- WHERE api_key = $1
 -- LIMIT 1;
+
+-- name: DeleteFeedFollow :exec
+DELETE FROM feed_follows
+WHERE id = $1 AND user_id = $2;

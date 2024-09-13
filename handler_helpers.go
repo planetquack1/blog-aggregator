@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/planetquack1/blog-aggregator/internal/database"
@@ -30,6 +31,7 @@ func (cfg *apiConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
 			return
 		}
 		// If API key is valid, call the handler with the user data
+		fmt.Println(user)
 		handler(w, r, user)
 	}
 }

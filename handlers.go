@@ -158,12 +158,12 @@ func (cfg *apiConfig) getFeeds(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
 
-	type FeedID struct {
+	type Feed struct {
 		ID string `json:"feed_id"`
 	}
 
 	// Read in struct
-	feed, err := decodeJSON(r, FeedID{})
+	feed, err := decodeJSON(r, Feed{})
 	if err != nil {
 		respondWithError(w, 400, "Failed to parse JSON")
 		return
@@ -207,4 +207,33 @@ func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, us
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(dat)
+}
+
+func (cfg *apiConfig) deleteFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	// Extract feedFollowID from the path using PathValue
+	feedFollowIDStr := r.PathValue("feedFollowID")
+	if feedFollowIDStr == "" {
+		respondWithError(w, 400, "feedFollowID not provided")
+		return
+	}
+
+	// Parse feed ID
+	feedFollowID, err := uuid.Parse(feedFollowIDStr)
+	if err != nil {
+		respondWithError(w, 400, "Failed to parse ID from string to UUID")
+		return
+	}
+
+	err = cfg.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
+		ID:     feedFollowID,
+		UserID: user.ID,
+	})
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to delete feed follow")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
