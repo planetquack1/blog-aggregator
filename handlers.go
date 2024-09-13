@@ -104,14 +104,14 @@ func (cfg *apiConfig) postFeeds(w http.ResponseWriter, r *http.Request, user dat
 
 	currentTime := time.Now()
 
-	randomUUID, err := uuid.NewRandom()
+	randomFeedUUID, err := uuid.NewRandom()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
 		return
 	}
 
 	addedFeed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
-		ID:        randomUUID,
+		ID:        randomFeedUUID,
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
 		Name:      feed.Name,
@@ -124,8 +124,37 @@ func (cfg *apiConfig) postFeeds(w http.ResponseWriter, r *http.Request, user dat
 		return
 	}
 
+	randomFeedFollowsUUID, err := uuid.NewRandom()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
+		return
+	}
+
+	// Follow the feed
+	addedFeedFollows, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
+		ID:        randomFeedFollowsUUID,
+		CreatedAt: currentTime,
+		UpdatedAt: currentTime,
+		UserID:    user.ID,
+		FeedID:    randomFeedUUID,
+	})
+	if err != nil {
+		fmt.Println(err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed")
+		return
+	}
+
+	type FeedAndFeedFollows struct {
+		Feed        database.Feed       `json:"feed"`
+		FeedFollows database.FeedFollow `json:"feed_follows"`
+	}
+	feedAndFeedFollows := FeedAndFeedFollows{
+		Feed:        addedFeed,
+		FeedFollows: addedFeedFollows,
+	}
+
 	// Marshall and write
-	dat, err := json.Marshal(addedFeed)
+	dat, err := json.Marshal(feedAndFeedFollows)
 	if err != nil {
 		log.Printf("Error marshalling user: %s", err)
 		return
@@ -184,7 +213,7 @@ func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	addedFeed, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
+	addedFeedFollows, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
 		ID:        randomUUID,
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
@@ -193,12 +222,12 @@ func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, us
 	})
 	if err != nil {
 		fmt.Println(err)
-		respondWithError(w, http.StatusInternalServerError, "Failed to create user")
+		respondWithError(w, http.StatusInternalServerError, "Failed to create feed follows")
 		return
 	}
 
 	// Marshall and write
-	dat, err := json.Marshal(addedFeed)
+	dat, err := json.Marshal(addedFeedFollows)
 	if err != nil {
 		log.Printf("Error marshalling user: %s", err)
 		return
