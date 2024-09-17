@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/planetquack1/blog-aggregator/internal/database"
@@ -15,6 +16,11 @@ import (
 type apiConfig struct {
 	DB *database.Queries
 }
+
+// func main() {
+// 	var w http.ResponseWriter
+// 	fmt.Println(fetchRSSFeed(w, "https://blog.boot.dev/index.xml"))
+// }
 
 func main() {
 
@@ -35,9 +41,12 @@ func main() {
 		log.Fatal("Can't connect to database")
 	}
 
+	db := database.New(conn)
 	cfg := apiConfig{
-		DB: database.New(conn),
+		DB: db,
 	}
+
+	go startScraping(db, 10, time.Minute)
 
 	// Initialize ServeMux
 	mux := http.NewServeMux()

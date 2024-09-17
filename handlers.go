@@ -44,14 +44,8 @@ func (cfg *apiConfig) postUsers(w http.ResponseWriter, r *http.Request) {
 
 	currentTime := time.Now()
 
-	randomUUID, err := uuid.NewRandom()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
-		return
-	}
-
 	user, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
-		ID:        randomUUID,
+		ID:        uuid.New(),
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
 		Name:      name.Name,
@@ -104,11 +98,7 @@ func (cfg *apiConfig) postFeeds(w http.ResponseWriter, r *http.Request, user dat
 
 	currentTime := time.Now()
 
-	randomFeedUUID, err := uuid.NewRandom()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
-		return
-	}
+	randomFeedUUID := uuid.New()
 
 	addedFeed, err := cfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:        randomFeedUUID,
@@ -124,15 +114,9 @@ func (cfg *apiConfig) postFeeds(w http.ResponseWriter, r *http.Request, user dat
 		return
 	}
 
-	randomFeedFollowsUUID, err := uuid.NewRandom()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
-		return
-	}
-
 	// Follow the feed
 	addedFeedFollows, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
-		ID:        randomFeedFollowsUUID,
+		ID:        uuid.New(),
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
 		UserID:    user.ID,
@@ -207,14 +191,8 @@ func (cfg *apiConfig) postFeedFollows(w http.ResponseWriter, r *http.Request, us
 
 	currentTime := time.Now()
 
-	randomUUID, err := uuid.NewRandom()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to generate UUID")
-		return
-	}
-
 	addedFeedFollows, err := cfg.DB.CreateFeedFollows(r.Context(), database.CreateFeedFollowsParams{
-		ID:        randomUUID,
+		ID:        uuid.New(),
 		CreatedAt: currentTime,
 		UpdatedAt: currentTime,
 		UserID:    user.ID,
