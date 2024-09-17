@@ -264,3 +264,26 @@ func (cfg *apiConfig) getFeedFollows(w http.ResponseWriter, r *http.Request, use
 	w.WriteHeader(http.StatusOK)
 	w.Write(dat)
 }
+
+func (cfg *apiConfig) getPostsByUser(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	posts, err := cfg.DB.GetPostsByUser(r.Context(), database.GetPostsByUserParams{
+		UserID: user.ID,
+		Limit:  10,
+	})
+	if err != nil {
+		log.Printf("Could not get posts: %s", err)
+		return
+	}
+
+	// Marshall and write
+	dat, err := json.Marshal(posts)
+	if err != nil {
+		log.Printf("Error marshalling user: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(dat)
+}
